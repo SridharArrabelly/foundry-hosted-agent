@@ -1,0 +1,20 @@
+[project]
+name = "foundry-hosted-agent"
+version = "0.1.0"
+description = "Seattle Hotel Agent - Microsoft Agent Framework on Azure AI Foundry Hosted Agent service."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "azure-ai-agentserver-agentframework==1.0.0b16",
+    "agent-dev-cli",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = [
+    "debugpy",
+]
+
+[tool.uv]
+package = false
+prerelease = "allow"
