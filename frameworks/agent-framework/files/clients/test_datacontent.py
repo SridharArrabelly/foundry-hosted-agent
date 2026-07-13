@@ -33,6 +33,9 @@ SAMPLE = Path(__file__).parent / "sample.txt"
 
 FOUNDRY_SCOPE = "https://ai.azure.com/.default"
 
+# Data-plane API version required by Foundry hosted-agent endpoints
+DEFAULT_API_VERSION = "v1"
+
 
 def _needs_auth(url: str) -> bool:
     host = (urlparse(url).hostname or "").lower()
@@ -79,6 +82,14 @@ def main() -> int:
     parser.add_argument("--url", default=DEFAULT_URL, help="Hosted agent base URL")
     parser.add_argument("--file", default=str(SAMPLE), help="File to attach")
     parser.add_argument("--media-type", default="text/plain", help="MIME type")
+    parser.add_argument(
+        "--api-version",
+        default=None,
+        help=(
+            f"Foundry data-plane API version. Auto-applied for Azure URLs "
+            f"(default: {DEFAULT_API_VERSION}). Not sent for localhost."
+        ),
+    )
     args = parser.parse_args()
 
     path = Path(args.file)
@@ -86,6 +97,10 @@ def main() -> int:
     payload = build_payload(data, path.name, args.media_type)
 
     endpoint = args.url.rstrip("/") + "/responses"
+    api_version = args.api_version or (DEFAULT_API_VERSION if _needs_auth(args.url) else None)
+    if api_version:
+        sep = "&" if "?" in endpoint else "?"
+        endpoint = f"{endpoint}{sep}api-version={api_version}"
     print(f">>> POST {endpoint}")
     print(f"    Attaching {path.name} ({len(data)} bytes, {args.media_type})")
     print(f"    Content types: {[c['type'] for c in payload['input'][0]['content']]}")
@@ -94,7 +109,10 @@ def main() -> int:
     headers = _auth_headers(args.url)
     with httpx.Client(timeout=120.0, headers=headers) as client:
         r = client.post(endpoint, json=payload)
-        r.raise_for_status()
+        if r.status_code >= 400:
+            print(f"!!! HTTP {r.status_code} from /responses")
+            print(f"    Response body: {r.text}")
+            r.raise_for_status()
         body = r.json()
 
     print("<<< Response:")
