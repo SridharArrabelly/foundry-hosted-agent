@@ -4,17 +4,6 @@ Samples built with the [Microsoft Agent Framework](https://learn.microsoft.com/e
 and hosted via [`agent-framework-foundry-hosting`](https://pypi.org/project/agent-framework-foundry-hosting/)
 + [`agent-framework-foundry`](https://pypi.org/project/agent-framework-foundry/).
 
-> **Note on hosting SDKs.** Two Foundry hosting SDKs exist for Agent Framework:
-> - **`agent-framework-foundry-hosting`** (used here) — declares session/sandbox
->   capability, so the Foundry Portal Playground lights up the **Files** pane
->   and treats each conversation as a persistent session.
-> - `azure-ai-agentserver-agentframework` (beta) — serves `/responses` but does
->   **not** declare session/files capability, so the Portal treats the agent as
->   stateless (no Files pane).
->
-> If Portal file upload doesn't work for your existing agent, this SDK swap is
-> almost certainly the fix.
-
 ## Samples in this folder
 
 | Sample | Protocol | Status | Description |

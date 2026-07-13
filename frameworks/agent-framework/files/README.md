@@ -25,10 +25,7 @@ the agent's `$HOME`:
 1. **The right hosting SDK.** Use
    [`agent-framework-foundry-hosting`](https://pypi.org/project/agent-framework-foundry-hosting/)
    (this sample does). It declares session/sandbox capability so the Portal
-   lights up the Files pane. The older beta
-   `azure-ai-agentserver-agentframework` serves `/responses` but does not
-   declare session/files, so the Portal treats the agent as stateless and no
-   Files pane appears.
+   lights up the Files pane.
 2. **The right protocol version in `agent.yaml`.**
    `protocols: responses: 2.0.0` — pairs with the hosting SDK above.
 

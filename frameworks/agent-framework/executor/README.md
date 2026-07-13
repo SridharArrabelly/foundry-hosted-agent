@@ -33,4 +33,4 @@ executor/
 ## Reference implementation
 
 See the completed [`tools/`](../tools/) sample for the working reference of a
-Microsoft Agent Framework agent hosted via the Azure AI AgentServer SDK.
+Microsoft Agent Framework agent hosted via `agent-framework-foundry-hosting` + `agent-framework-foundry`.
