@@ -56,7 +56,7 @@ files/
 
 ## Prerequisites
 
-- Microsoft Foundry project with a chat model deployed (e.g. `gpt-4o-mini`).
+- Microsoft Foundry project with a chat model deployed (e.g. `gpt-4o-mini` or `gpt-5.4-mini`).
 - Azure CLI (`az login`).
 - Python 3.10+.
 
@@ -104,8 +104,7 @@ python clients/test_datacontent.py
 ```
 
 Expected: the agent responds with "No files found in the session sandbox."
-because inline `input_file` bytes are not persisted to disk. This is exactly
-the failure the customer reported when they used `DataContent` inline.
+because inline `input_file` bytes are not persisted to disk. This failure happens when you use `DataContent` inline.
 
 ## Test end-to-end against a deployed agent
 
