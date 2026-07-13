@@ -73,7 +73,11 @@ def upload(client: httpx.Client, base_url: str, path: Path, media_type: str) -> 
             "    Try deploying the agent and running with --url <deployed-url>."
         )
         r.raise_for_status()
-    r.raise_for_status()
+    if r.status_code >= 400:
+        print(f"!!! HTTP {r.status_code} from /files")
+        print(f"    Response headers: {dict(r.headers)}")
+        print(f"    Response body: {r.text}")
+        r.raise_for_status()
     body = r.json()
     print(f"<<< Uploaded. Response: {json.dumps(body, indent=2)}")
     return body.get("id") or body.get("file_id") or ""
