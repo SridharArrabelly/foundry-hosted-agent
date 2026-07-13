@@ -96,7 +96,11 @@ def main() -> int:
     data = path.read_bytes()
     payload = build_payload(data, path.name, args.media_type)
 
-    endpoint = args.url.rstrip("/") + "/responses"
+    endpoint = args.url.rstrip("/")
+    if _needs_auth(args.url) and "/endpoint/protocols/" not in endpoint:
+        endpoint = f"{endpoint}/endpoint/protocols/openai/responses"
+    else:
+        endpoint = f"{endpoint}/responses"
     api_version = args.api_version or (DEFAULT_API_VERSION if _needs_auth(args.url) else None)
     if api_version:
         sep = "&" if "?" in endpoint else "?"
