@@ -8,18 +8,20 @@ hosted agents.
 ## The correct pattern
 
 > Files attached to a hosted agent are **not** sent inline in the `/responses`
-> message. The Foundry platform stores them on the **per-session sandbox
-> filesystem** (`$HOME` inside the container). The agent reads them from disk
-> with normal Python file I/O.
+> message. Foundry runs each session in a **per-session micro-VM–isolated
+> sandbox** with a persistent filesystem. Uploaded files land under `$HOME`
+> inside that sandbox, and the agent reads them from disk with normal Python
+> file I/O.
 
-If a client tries to push bytes inline (e.g. as `DataContent` or an OpenAI
-`input_file` content item) the platform generally drops them — which is the
-customer bug report we're validating here.
+If a client tries to push bytes inline as Agent Framework `DataContent`
+(or as an OpenAI `input_file` content item) the platform generally drops
+them — which is the customer bug report we're validating here.
 
 ## What this sample does
 
 - **Server** (`main.py`) — Agent Framework agent with two tools:
-  - `list_files()` — lists files under `FILES_ROOT` (defaults to `$HOME`).
+  - `list_files()` — lists files under `FILES_ROOT` (defaults to `$HOME`
+    inside the Foundry micro-VM; falls back to `./sandbox` for local dev).
   - `read_text_file(filename)` — reads a text file (UTF-8, up to 64 KiB).
   - Agent middleware `log_incoming_middleware` logs every incoming message
     (role, content types, media types, byte sizes, text previews) so you can
@@ -27,12 +29,14 @@ customer bug report we're validating here.
 
 - **Client B** (`clients/test_files_endpoint.py`) — **primary test**. Uploads
   a file via `POST /files`, then asks the agent to describe it. Mirrors what
-  the Foundry Playground's Files pane does under the hood.
+  the Foundry Playground's Files pane does under the hood — files land in
+  the session's `$HOME`.
 
 - **Client A** (`clients/test_datacontent.py`) — **anti-pattern demo**. Sends
-  the file inline via `input_file` in `/responses`. Reproduces the customer's
+  the file inline (Agent Framework `DataContent` equivalent = OpenAI's
+  `input_file` content item in `/responses`). Reproduces the customer's
   non-working approach — expected to result in "No files found" from the
-  agent.
+  agent because inline bytes are never persisted to the sandbox filesystem.
 
 ## Layout
 
@@ -56,7 +60,7 @@ files/
 
 ## Prerequisites
 
-- Microsoft Foundry project with a chat model deployed (e.g. `gpt-4o-mini` or `gpt-5.4-mini`).
+- Microsoft Foundry project with a chat model deployed (e.g. `gpt-4o-mini`).
 - Azure CLI (`az login`).
 - Python 3.10+.
 
@@ -104,7 +108,8 @@ python clients/test_datacontent.py
 ```
 
 Expected: the agent responds with "No files found in the session sandbox."
-because inline `input_file` bytes are not persisted to disk. This failure happens when you use `DataContent` inline.
+because inline `input_file` bytes are not persisted to disk. This is exactly
+the failure the customer reported when they used `DataContent` inline.
 
 ## Test end-to-end against a deployed agent
 
