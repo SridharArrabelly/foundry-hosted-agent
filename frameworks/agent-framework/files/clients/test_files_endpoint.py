@@ -36,6 +36,9 @@ SAMPLE = Path(__file__).parent / "sample.txt"
 # Scope for Foundry / Azure AI cognitive endpoints
 FOUNDRY_SCOPE = "https://ai.azure.com/.default"
 
+# Data-plane API version required by Foundry hosted-agent endpoints
+DEFAULT_API_VERSION = "v1"
+
 
 def _needs_auth(url: str) -> bool:
     host = (urlparse(url).hostname or "").lower()
@@ -58,8 +61,21 @@ def _auth_headers(url: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-def upload(client: httpx.Client, base_url: str, path: Path, media_type: str) -> str:
-    endpoint = base_url.rstrip("/") + "/files"
+def _with_api_version(url: str, api_version: str | None) -> str:
+    if not api_version:
+        return url
+    sep = "&" if "?" in url else "?"
+    return f"{url}{sep}api-version={api_version}"
+
+
+def upload(
+    client: httpx.Client,
+    base_url: str,
+    path: Path,
+    media_type: str,
+    api_version: str | None,
+) -> str:
+    endpoint = _with_api_version(base_url.rstrip("/") + "/files", api_version)
     print(f">>> POST {endpoint}  (uploading {path.name}, {path.stat().st_size} bytes)")
     with path.open("rb") as f:
         r = client.post(
@@ -83,8 +99,13 @@ def upload(client: httpx.Client, base_url: str, path: Path, media_type: str) -> 
     return body.get("id") or body.get("file_id") or ""
 
 
-def send(client: httpx.Client, base_url: str, file_id: str) -> dict:
-    endpoint = base_url.rstrip("/") + "/responses"
+def send(
+    client: httpx.Client,
+    base_url: str,
+    file_id: str,
+    api_version: str | None,
+) -> dict:
+    endpoint = _with_api_version(base_url.rstrip("/") + "/responses", api_version)
     payload = {
         "input": [
             {
@@ -105,7 +126,10 @@ def send(client: httpx.Client, base_url: str, file_id: str) -> dict:
     }
     print(f">>> POST {endpoint}  (referencing file_id={file_id!r})")
     r = client.post(endpoint, json=payload, timeout=120.0)
-    r.raise_for_status()
+    if r.status_code >= 400:
+        print(f"!!! HTTP {r.status_code} from /responses")
+        print(f"    Response body: {r.text}")
+        r.raise_for_status()
     return r.json()
 
 
@@ -114,17 +138,26 @@ def main() -> int:
     parser.add_argument("--url", default=DEFAULT_URL, help="Hosted agent base URL")
     parser.add_argument("--file", default=str(SAMPLE), help="File to upload")
     parser.add_argument("--media-type", default="text/plain", help="MIME type")
+    parser.add_argument(
+        "--api-version",
+        default=None,
+        help=(
+            f"Foundry data-plane API version. Auto-applied for Azure URLs "
+            f"(default: {DEFAULT_API_VERSION}). Not sent for localhost."
+        ),
+    )
     args = parser.parse_args()
 
     path = Path(args.file)
     headers = _auth_headers(args.url)
+    api_version = args.api_version or (DEFAULT_API_VERSION if _needs_auth(args.url) else None)
 
     with httpx.Client(timeout=120.0, headers=headers) as client:
-        file_id = upload(client, args.url, path, args.media_type)
+        file_id = upload(client, args.url, path, args.media_type, api_version)
         if not file_id:
             print("!!! Upload succeeded but no file id returned - cannot continue.")
             return 1
-        body = send(client, args.url, file_id)
+        body = send(client, args.url, file_id, api_version)
 
     print("<<< /responses body:")
     print(json.dumps(body, indent=2))
