@@ -15,7 +15,6 @@ This sample follows that correct pattern:
   so you can confirm what shape the platform actually sends to your code.
 """
 
-import asyncio
 import logging
 import os
 from collections.abc import Awaitable, Callable
@@ -27,9 +26,9 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from agent_framework import Agent, AgentContext
-from agent_framework.azure import AzureAIAgentClient
-from azure.ai.agentserver.agentframework import from_agent_framework
-from azure.identity.aio import DefaultAzureCredential
+from agent_framework.foundry import FoundryChatClient
+from agent_framework_foundry_hosting import ResponsesHostServer
+from azure.identity import DefaultAzureCredential
 
 # --- Verbose logging so we can see what arrives on the wire ------------------
 
@@ -38,14 +37,20 @@ logging.basicConfig(
     format="%(asctime)s %(name)s %(levelname)s %(message)s",
 )
 logging.getLogger("agent_framework").setLevel(logging.DEBUG)
-logging.getLogger("azure.ai.agentserver").setLevel(logging.DEBUG)
+logging.getLogger("agent_framework_foundry_hosting").setLevel(logging.DEBUG)
 
 log = logging.getLogger("files-agent")
 
 # --- Foundry / runtime configuration -----------------------------------------
+# FOUNDRY_PROJECT_ENDPOINT is auto-injected by the hosting platform at runtime;
+# locally it comes from .env. Model name arrives under either spelling.
 
-PROJECT_ENDPOINT = os.getenv("PROJECT_ENDPOINT")
-MODEL_DEPLOYMENT_NAME = os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4o-mini")
+PROJECT_ENDPOINT = os.environ["FOUNDRY_PROJECT_ENDPOINT"]
+MODEL_DEPLOYMENT_NAME = (
+    os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME")
+    or os.environ.get("MODEL_DEPLOYMENT_NAME")
+    or "gpt-4o-mini"
+)
 
 # Directory the tools are scoped to. On Foundry hosted agents this is $HOME
 # (the per-session sandbox). Locally we default to ./sandbox to avoid walking
@@ -159,28 +164,27 @@ async def log_incoming_middleware(
 # --- Entry point -------------------------------------------------------------
 
 
-async def main() -> None:
-    async with (
-        DefaultAzureCredential() as credential,
-        AzureAIAgentClient(
-            project_endpoint=PROJECT_ENDPOINT,
-            model_deployment_name=MODEL_DEPLOYMENT_NAME,
-            credential=credential,
-        ) as client,
-    ):
-        agent = Agent(
-            client,
-            name="FileInspectionAgent",
-            instructions=INSTRUCTIONS,
-            tools=[list_files, read_text_file],
-            middleware=[log_incoming_middleware],
-        )
+def main() -> None:
+    client = FoundryChatClient(
+        project_endpoint=PROJECT_ENDPOINT,
+        model=MODEL_DEPLOYMENT_NAME,
+        credential=DefaultAzureCredential(),
+    )
 
-        print(f"File Inspection Agent Server running on http://localhost:8088")
-        print(f"Sandbox directory: {FILES_ROOT}")
-        server = from_agent_framework(agent)
-        await server.run_async()
+    agent = Agent(
+        client=client,
+        name="FileInspectionAgent",
+        instructions=INSTRUCTIONS,
+        tools=[list_files, read_text_file],
+        middleware=[log_incoming_middleware],
+        # The hosting platform manages conversation history; don't double-store it.
+        default_options={"store": False},
+    )
+
+    print(f"File Inspection Agent Server running on http://localhost:8088")
+    print(f"Sandbox directory: {FILES_ROOT}")
+    ResponsesHostServer(agent).run()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

@@ -4,7 +4,6 @@ Uses Microsoft Agent Framework with Azure AI Foundry.
 Ready for deployment to Foundry Hosted Agent service.
 """
 
-import asyncio
 import os
 from datetime import datetime
 from typing import Annotated
@@ -14,18 +13,19 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from agent_framework import Agent
-from agent_framework.azure import AzureAIAgentClient
-from azure.ai.agentserver.agentframework import from_agent_framework
-from azure.identity.aio import DefaultAzureCredential
+from agent_framework.foundry import FoundryChatClient
+from agent_framework_foundry_hosting import ResponsesHostServer
+from azure.identity import DefaultAzureCredential
 
-# Configure these for your Foundry project
-# Read the explicit variables present in the .env file
-PROJECT_ENDPOINT = os.getenv(
-    "PROJECT_ENDPOINT"
-)  # e.g., "https://<project>.services.ai.azure.com"
-MODEL_DEPLOYMENT_NAME = os.getenv(
-    "MODEL_DEPLOYMENT_NAME", "gpt-5.4-mini-1"
-)  # Your model deployment name e.g., "gpt-5.4-mini-1"
+# Configure these for your Foundry project.
+# FOUNDRY_PROJECT_ENDPOINT is auto-injected by the hosting platform at runtime;
+# locally it comes from .env.
+PROJECT_ENDPOINT = os.environ["FOUNDRY_PROJECT_ENDPOINT"]
+MODEL_DEPLOYMENT_NAME = (
+    os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME")
+    or os.environ.get("MODEL_DEPLOYMENT_NAME")
+    or "gpt-5.4-mini-1"
+)
 
 
 # Simulated hotel data for Seattle
@@ -115,20 +115,18 @@ def get_available_hotels(
         return f"Error parsing dates. Please use YYYY-MM-DD format. Details: {str(e)}"
 
 
-async def main():
+def main():
     """Main function to run the agent as a web server."""
-    async with (
-        DefaultAzureCredential() as credential,
-        AzureAIAgentClient(
-            project_endpoint=PROJECT_ENDPOINT,
-            model_deployment_name=MODEL_DEPLOYMENT_NAME,
-            credential=credential,
-        ) as client,
-    ):
-        agent = Agent(
-            client,
-            name="SeattleHotelAgent",
-            instructions="""You are a helpful travel assistant specializing in finding hotels in Seattle, Washington.
+    client = FoundryChatClient(
+        project_endpoint=PROJECT_ENDPOINT,
+        model=MODEL_DEPLOYMENT_NAME,
+        credential=DefaultAzureCredential(),
+    )
+
+    agent = Agent(
+        client=client,
+        name="SeattleHotelAgent",
+        instructions="""You are a helpful travel assistant specializing in finding hotels in Seattle, Washington.
 
 When a user asks about hotels in Seattle:
 1. Ask for their check-in and check-out dates if not provided
@@ -139,13 +137,14 @@ When a user asks about hotels in Seattle:
 
 Be conversational and helpful. If users ask about things outside of Seattle hotels, 
 politely let them know you specialize in Seattle hotel recommendations.""",
-            tools=[get_available_hotels],
-        )
+        tools=[get_available_hotels],
+        # The hosting platform manages conversation history; don't double-store it.
+        default_options={"store": False},
+    )
 
-        print("Seattle Hotel Agent Server running on http://localhost:8088")
-        server = from_agent_framework(agent)
-        await server.run_async()
+    print("Seattle Hotel Agent Server running on http://localhost:8088")
+    ResponsesHostServer(agent).run()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

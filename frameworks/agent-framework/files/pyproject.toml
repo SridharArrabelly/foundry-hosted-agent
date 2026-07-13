@@ -5,8 +5,9 @@ description = "File Inspection Agent - diagnostic hosted agent to debug file/Dat
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "azure-ai-agentserver-agentframework==1.0.0b16",
-    "agent-dev-cli",
+    "agent-framework-foundry",
+    "agent-framework-foundry-hosting>=1.0.0a260630",
+    "azure-identity",
     "python-dotenv",
     "httpx",
 ]
