@@ -1,0 +1,5 @@
+Line 1: Hello world.
+Line 2: This is a small text file used to test hosted-agent file uploads.
+Line 3: If the agent can see this text, DataContent survived the wire.
+Line 4: If the agent responds "No attachment received.", the bytes were lost.
+Line 5: End of sample.
