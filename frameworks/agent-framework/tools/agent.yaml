@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/AgentSchema/refs/heads/main/schemas/v1.0/ContainerAgent.yaml
 
 kind: hosted
-name: foundry-hosted-agent
+name: agent-framework-tools
 description: >
-  A travel assistant agent that helps users find hotels in Seattle.
-  Demonstrates local Python tool execution - a key advantage of code-based 
-  hosted agents over prompt agents.
+  Seattle Hotel Agent - a travel assistant that helps users find hotels in
+  Seattle. Demonstrates local Python tool execution with the Microsoft Agent
+  Framework hosted via the Azure AI AgentServer SDK.
 metadata:
   authors:
     - Microsoft
