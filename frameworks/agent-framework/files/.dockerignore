@@ -7,7 +7,6 @@ env/
 # Environment files with secrets
 .env
 .env.*
-!.env.example
 *.local
 
 # Python build artifacts
@@ -44,17 +43,28 @@ htmlcov/
 # IDE and OS files
 .DS_Store
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
 
-# Foundry / build artifacts
+# Foundry config
 .foundry/
 build-source-*/
 
-# Local scratch
-body.json
-frameworks/agent-framework/files/sandbox/*
-!frameworks/agent-framework/files/sandbox/.gitkeep
-frameworks/agent-framework/files/.venv/
+# Git
+.git/
+.gitignore
 
+# Docker
+.dockerignore
+
+# Client repro scripts and local sandbox contents (not needed inside the deployed container)
+clients/
+sandbox/
+
+# Documentation
+docs/
+*.md
+!README.md
+LICENSE

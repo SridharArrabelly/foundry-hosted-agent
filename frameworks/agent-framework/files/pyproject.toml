@@ -1,0 +1,21 @@
+[project]
+name = "agent-framework-files"
+version = "0.1.0"
+description = "File Inspection Agent - diagnostic hosted agent to debug file/DataContent handling."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "azure-ai-agentserver-agentframework==1.0.0b16",
+    "agent-dev-cli",
+    "python-dotenv",
+    "httpx",
+]
+
+[dependency-groups]
+dev = [
+    "debugpy",
+]
+
+[tool.uv]
+package = false
+prerelease = "allow"

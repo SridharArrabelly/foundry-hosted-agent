@@ -10,7 +10,7 @@ Each sample is a self-contained project that you can:
 - Debug in VS Code with the AI Toolkit Agent Inspector
 - Deploy to a Microsoft Foundry project as a hosted agent
 
-> **Status legend:** ✅ implemented · 🚧 planned · — not applicable
+> **Status legend:** ✅ implemented · ⚠️ diagnostic / in progress · 🚧 planned · — not applicable
 
 ## Framework × Sample matrix
 
@@ -24,7 +24,7 @@ Each sample is a self-contained project that you can:
 | **Basic** (Invocations) | In-memory session for multi-turn conversations | 🚧 | 🚧 | 🚧 | 🚧 |
 | **MCP** (Responses) | Dynamically discovers tools from a remote MCP server | 🚧 | 🚧 | 🚧 | 🚧 |
 | **Foundry Toolbox** (Responses) | Invokes centrally managed tools from a Foundry Toolbox | 🚧 | 🚧 | 🚧 | 🚧 |
-| **Files** (Responses) | Lists, reads, and interprets files with shell + code tools | 🚧 | 🚧 | 🚧 | 🚧 |
+| **Files** (Responses) | Lists, reads, and interprets files with shell + code tools | [⚠️](frameworks/agent-framework/files/) | 🚧 | 🚧 | 🚧 |
 
 Click any ✅ cell above to jump to the sample.
 

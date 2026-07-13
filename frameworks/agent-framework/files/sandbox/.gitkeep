@@ -1,0 +1,2 @@
+# Local sandbox directory used as FILES_ROOT when running locally.
+# In Foundry deployment $HOME points to the per-session sandbox instead.

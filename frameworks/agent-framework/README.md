@@ -15,7 +15,7 @@ and hosted via the [Azure AI AgentServer SDK](https://pypi.org/project/azure-ai-
 | [`basic-invocations/`](basic-invocations/) | Invocations | 🚧 | In-memory session multi-turn conversation |
 | [`mcp/`](mcp/) | Responses | 🚧 | Discovers tools from a remote MCP server |
 | [`foundry-toolbox/`](foundry-toolbox/) | Responses | 🚧 | Uses centrally managed tools from a Foundry Toolbox |
-| [`files/`](files/) | Responses | 🚧 | Lists, reads, and interprets files (shell + code tools) |
+| [`files/`](files/) | Responses | ⚠️ | Diagnostic - hosted agent + clients to repro file-upload / `DataContent` handling |
 
 ## Protocol reference
 
