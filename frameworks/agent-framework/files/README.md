@@ -137,24 +137,11 @@ Expected: same as local — agent replies "No files found in the session
 sandbox." (Auth is automatic via `DefaultAzureCredential`; make sure you're
 signed in with `az login` and have the `Azure AI User` role on the project.)
 
-## Deployment note
+## Deploy to Foundry
 
-The Foundry VS Code extension currently uploads the **entire git repo** as
-the Docker build context (not the folder you have open as workspace root).
-Because this repo has multiple samples under `frameworks/`, the extension's
-build fails at `COPY pyproject.toml uv.lock ./` — that file isn't at the repo
-root.
-
-**Workaround:** build and push with the Azure CLI from this folder, then
-choose "Use existing image" in the extension's Deploy flow:
-
-```powershell
-az acr build `
-  --registry <your-acr-name> `
-  --image agent-framework-files:v1 `
-  --file Dockerfile `
-  .
-```
+In VS Code, Command Palette → **Microsoft Foundry: Deploy Hosted Agent**. The
+extension builds the container image, pushes it to your project's ACR, and
+registers the agent version.
 
 ## References
 
