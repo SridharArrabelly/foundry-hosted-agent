@@ -24,7 +24,7 @@ Each sample is a self-contained project that you can:
 | **Basic** (Invocations) | In-memory session for multi-turn conversations | 🚧 | 🚧 | 🚧 | 🚧 |
 | **MCP** (Responses) | Dynamically discovers tools from a remote MCP server | 🚧 | 🚧 | 🚧 | 🚧 |
 | **Foundry Toolbox** (Responses) | Invokes centrally managed tools from a Foundry Toolbox | 🚧 | 🚧 | 🚧 | 🚧 |
-| **Files** (Responses) | Lists, reads, and interprets files with shell + code tools | [⚠️](frameworks/agent-framework/files/) | 🚧 | 🚧 | 🚧 |
+| **Files** (Responses) | Lists, reads, and interprets files with shell + code tools | [✅](frameworks/agent-framework/files/) | 🚧 | 🚧 | 🚧 |
 
 Click any ✅ cell above to jump to the sample.
 
@@ -87,7 +87,8 @@ Individual samples list their own extra requirements, but all samples need:
 ## Additional resources
 
 - [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview)
-- [Azure AI AgentServer SDK](https://pypi.org/project/azure-ai-agentserver-agentframework/)
+- [Foundry hosting for Agent Framework (`agent-framework-foundry-hosting`)](https://pypi.org/project/agent-framework-foundry-hosting/)
+- [Foundry chat client for Agent Framework (`agent-framework-foundry`)](https://pypi.org/project/agent-framework-foundry/)
 - [Microsoft Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry/)
 - [Managed Identities for Azure Resources](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/)
 

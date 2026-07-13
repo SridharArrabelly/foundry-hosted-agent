@@ -1,9 +1,9 @@
-# Files sample (Agent Framework) — ⚠️ file-upload diagnostic
+# Files sample (Agent Framework) — ✅ session sandbox files
 
 An Agent Framework hosted agent that reads files a user uploaded via the
-Foundry Playground's **Files** pane (or the `/files` platform endpoint). Used
-to reproduce and diagnose reports that "file attachments don't work" on
-hosted agents.
+Foundry Portal Playground's **Files** pane (or the VS Code Agent Inspector's
+Files pane). Built to explain — and prove — the correct pattern for file
+attachments on Foundry hosted agents.
 
 ## The correct pattern
 
@@ -14,8 +14,26 @@ hosted agents.
 > file I/O.
 
 If a client tries to push bytes inline as Agent Framework `DataContent`
-(or as an OpenAI `input_file` content item) the platform generally drops
-them — which is the customer bug report we're validating here.
+(or as an OpenAI `input_file` content item), the platform generally drops
+them — which is the common customer bug report this sample validates.
+
+## Two things have to be right
+
+For the Playground Files pane to actually appear and for uploads to reach
+the agent's `$HOME`:
+
+1. **The right hosting SDK.** Use
+   [`agent-framework-foundry-hosting`](https://pypi.org/project/agent-framework-foundry-hosting/)
+   (this sample does). It declares session/sandbox capability so the Portal
+   lights up the Files pane. The older beta
+   `azure-ai-agentserver-agentframework` serves `/responses` but does not
+   declare session/files, so the Portal treats the agent as stateless and no
+   Files pane appears.
+2. **The right protocol version in `agent.yaml`.**
+   `protocols: responses: 2.0.0` — pairs with the hosting SDK above.
+
+If either is wrong, upload from the Portal will silently no-op or the Files
+pane won't be visible.
 
 ## What this sample does
 
@@ -27,16 +45,17 @@ them — which is the customer bug report we're validating here.
     (role, content types, media types, byte sizes, text previews) so you can
     see exactly what the platform delivers.
 
-- **Client B** (`clients/test_files_endpoint.py`) — **primary test**. Uploads
-  a file via `POST /files`, then asks the agent to describe it. Mirrors what
-  the Foundry Playground's Files pane does under the hood — files land in
-  the session's `$HOME`.
+- **Client A — anti-pattern demo** (`clients/test_datacontent.py`) — sends
+  the file inline via OpenAI `input_file` (the wire equivalent of Agent
+  Framework `DataContent`). Reproduces the customer's non-working approach —
+  the agent should reply "No files found in the session sandbox." because
+  inline bytes are never persisted to the sandbox filesystem. Sends an Entra
+  bearer token automatically when the URL is `*.azure.com` / `*.azure.net`.
 
-- **Client A** (`clients/test_datacontent.py`) — **anti-pattern demo**. Sends
-  the file inline (Agent Framework `DataContent` equivalent = OpenAI's
-  `input_file` content item in `/responses`). Reproduces the customer's
-  non-working approach — expected to result in "No files found" from the
-  agent because inline bytes are never persisted to the sandbox filesystem.
+There is intentionally no "upload via `/files` from a script" client — the
+correct programmatic path is to use the Foundry Portal Playground Files pane
+(or the VS Code Agent Inspector) which handles session lifecycle and the
+sandbox upload for you.
 
 ## Layout
 
@@ -44,7 +63,7 @@ them — which is the customer bug report we're validating here.
 files/
 ├── README.md
 ├── main.py              ← Agent with list_files + read_text_file tools
-├── agent.yaml           ← name: agent-framework-files
+├── agent.yaml           ← name: agent-framework-files, responses: 2.0.0
 ├── Dockerfile
 ├── .dockerignore
 ├── pyproject.toml
@@ -54,8 +73,7 @@ files/
 ├── sandbox/             ← local FILES_ROOT (gitignored except for a placeholder)
 └── clients/
     ├── sample.txt
-    ├── test_datacontent.py     ← Client A - anti-pattern
-    └── test_files_endpoint.py  ← Client B - correct pattern
+    └── test_datacontent.py     ← Client A - anti-pattern demo
 ```
 
 ## Prerequisites
@@ -70,62 +88,77 @@ Open **this folder** as the VS Code workspace root.
 
 ```powershell
 copy .env.example .env
-# edit .env - set PROJECT_ENDPOINT and MODEL_DEPLOYMENT_NAME
+# edit .env - set FOUNDRY_PROJECT_ENDPOINT and AZURE_AI_MODEL_DEPLOYMENT_NAME
 
 uv sync
 python main.py
 ```
 
-Wait for `File Inspection Agent Server running on http://localhost:8088` and
-the line telling you where `FILES_ROOT` is.
+Wait for the server-ready line and note where `FILES_ROOT` is printed.
 
-## Test locally
+## Prove the anti-pattern (Client A) locally
 
-Locally the `/files` endpoint isn't exposed by the AgentServer library — the
-platform provides it in Foundry. So for a local end-to-end test:
-
-1. Drop `clients/sample.txt` into the printed `FILES_ROOT` directory
-   (the sample defaults `FILES_ROOT` to `./sandbox` locally):
-   ```powershell
-   Copy-Item clients\sample.txt sandbox\
-   ```
-2. Ask the agent about it:
-   ```powershell
-   $body = @{
-       input  = "What text files are in my session sandbox? Read sample.txt and describe it."
-       stream = $false
-   } | ConvertTo-Json
-   Invoke-RestMethod -Uri http://localhost:8088/responses -Method Post -Body $body -ContentType "application/json"
-   ```
-
-You should see the agent call `list_files` and `read_text_file` in the server
-log and describe the file's contents in the response.
-
-## Test the anti-pattern (Client A)
+Make sure the sandbox is empty first — otherwise the agent will find leftover
+files and produce a false positive.
 
 ```powershell
-python clients/test_datacontent.py
+Remove-Item .\sandbox\sample.txt -ErrorAction SilentlyContinue
+python clients\test_datacontent.py
 ```
 
-Expected: the agent responds with "No files found in the session sandbox."
+Expected: the agent responds with **"No files found in the session sandbox."**
 because inline `input_file` bytes are not persisted to disk. This is exactly
-the failure the customer reported when they used `DataContent` inline.
+the failure that motivated this sample.
 
 ## Test end-to-end against a deployed agent
 
-1. Deploy this folder via `Microsoft Foundry: Deploy Hosted Agent`.
+1. Deploy this folder — see [deployment note](#deployment-note) below.
 2. In the Foundry Portal open the agent's Playground.
-3. On the right, open the **Files** pane and upload `clients/sample.txt`. It
-   lands in the session's `HOME/`.
-4. In the chat, ask: "list my files and describe sample.txt". The agent
+3. Send any bootstrap message (e.g. "hi"). This starts the session and unlocks
+   the **Files** pane on the right.
+4. In the Files pane, upload `clients/sample.txt`. It lands in the session's
+   `$HOME/`.
+5. In the chat, ask: "list my files and describe sample.txt". The agent
    should read and summarize the file.
 
-Or, from code, use `clients/test_files_endpoint.py`:
+The same works from VS Code with the **Microsoft Foundry: Test Hosted Agent**
+command (Agent Inspector). The Agent Inspector opens a session immediately,
+so the Files pane is usable without a bootstrap message.
+
+## Prove the anti-pattern against the deployed agent
+
+Each deployed session gets a fresh, empty sandbox, so no cleanup needed.
+
 ```powershell
-python clients/test_files_endpoint.py --url https://<your-deployed-agent-url>
+python clients\test_datacontent.py --url https://<your-resource>.services.ai.azure.com/api/projects/<your-project>/agents/agent-framework-files
+```
+
+Expected: same as local — agent replies "No files found in the session
+sandbox." (Auth is automatic via `DefaultAzureCredential`; make sure you're
+signed in with `az login` and have the `Azure AI User` role on the project.)
+
+## Deployment note
+
+The Foundry VS Code extension currently uploads the **entire git repo** as
+the Docker build context (not the folder you have open as workspace root).
+Because this repo has multiple samples under `frameworks/`, the extension's
+build fails at `COPY pyproject.toml uv.lock ./` — that file isn't at the repo
+root.
+
+**Workaround:** build and push with the Azure CLI from this folder, then
+choose "Use existing image" in the extension's Deploy flow:
+
+```powershell
+az acr build `
+  --registry <your-acr-name> `
+  --image agent-framework-files:v1 `
+  --file Dockerfile `
+  .
 ```
 
 ## References
 
-- [Hosted agents in Foundry Agent Service](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents) — see the "stateful workloads via `$HOME` and `/files`" note.
 - [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview)
+- [`agent-framework-foundry-hosting`](https://pypi.org/project/agent-framework-foundry-hosting/)
+- [`agent-framework-foundry`](https://pypi.org/project/agent-framework-foundry/)
+- [Hosted agents in Foundry Agent Service](https://learn.microsoft.com/en-us/azure/foundry/agents/concepts/hosted-agents)

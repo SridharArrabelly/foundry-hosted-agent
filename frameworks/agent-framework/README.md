@@ -1,7 +1,19 @@
 # Microsoft Agent Framework samples
 
 Samples built with the [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview)
-and hosted via the [Azure AI AgentServer SDK](https://pypi.org/project/azure-ai-agentserver-agentframework/).
+and hosted via [`agent-framework-foundry-hosting`](https://pypi.org/project/agent-framework-foundry-hosting/)
++ [`agent-framework-foundry`](https://pypi.org/project/agent-framework-foundry/).
+
+> **Note on hosting SDKs.** Two Foundry hosting SDKs exist for Agent Framework:
+> - **`agent-framework-foundry-hosting`** (used here) — declares session/sandbox
+>   capability, so the Foundry Portal Playground lights up the **Files** pane
+>   and treats each conversation as a persistent session.
+> - `azure-ai-agentserver-agentframework` (beta) — serves `/responses` but does
+>   **not** declare session/files capability, so the Portal treats the agent as
+>   stateless (no Files pane).
+>
+> If Portal file upload doesn't work for your existing agent, this SDK swap is
+> almost certainly the fix.
 
 ## Samples in this folder
 
@@ -15,7 +27,7 @@ and hosted via the [Azure AI AgentServer SDK](https://pypi.org/project/azure-ai-
 | [`basic-invocations/`](basic-invocations/) | Invocations | 🚧 | In-memory session multi-turn conversation |
 | [`mcp/`](mcp/) | Responses | 🚧 | Discovers tools from a remote MCP server |
 | [`foundry-toolbox/`](foundry-toolbox/) | Responses | 🚧 | Uses centrally managed tools from a Foundry Toolbox |
-| [`files/`](files/) | Responses | ⚠️ | Diagnostic - hosted agent + clients to repro file-upload / `DataContent` handling |
+| [`files/`](files/) | Responses | ✅ | Session sandbox files - reads what the user uploads via the Playground Files pane. Also ships a `DataContent` anti-pattern client for reference. |
 
 ## Protocol reference
 

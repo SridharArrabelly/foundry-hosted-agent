@@ -1,7 +1,9 @@
 # Tools sample (Agent Framework) — ✅ Seattle Hotel Agent
 
 A Microsoft Agent Framework agent with a **local Python tool** (`get_available_hotels`)
-that finds hotels in Seattle. Hosted via the Azure AI AgentServer SDK using the
+that finds hotels in Seattle. Hosted via
+[`agent-framework-foundry-hosting`](https://pypi.org/project/agent-framework-foundry-hosting/)
++ [`agent-framework-foundry`](https://pypi.org/project/agent-framework-foundry/) using the
 **Responses** protocol.
 
 This sample demonstrates a key advantage of code-based hosted agents over
@@ -41,15 +43,15 @@ tools/
 Copy `.env.example` to `.env` and fill in:
 
 ```
-PROJECT_ENDPOINT=https://<your-resource>.services.ai.azure.com/api/projects/<your-project>
-MODEL_DEPLOYMENT_NAME=gpt-4o-mini
+FOUNDRY_PROJECT_ENDPOINT=https://<your-resource>.services.ai.azure.com/api/projects/<your-project>
+AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-4o-mini
 ```
 
 Or set them in PowerShell:
 
 ```powershell
-$env:PROJECT_ENDPOINT="https://<your-resource>.services.ai.azure.com/api/projects/<your-project>"
-$env:MODEL_DEPLOYMENT_NAME="gpt-4o-mini"
+$env:FOUNDRY_PROJECT_ENDPOINT="https://<your-resource>.services.ai.azure.com/api/projects/<your-project>"
+$env:AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-4o-mini"
 ```
 
 ## Running locally
@@ -141,5 +143,6 @@ the Foundry project:
 ## References
 
 - [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview)
-- [Azure AI AgentServer SDK](https://pypi.org/project/azure-ai-agentserver-agentframework/)
+- [`agent-framework-foundry-hosting`](https://pypi.org/project/agent-framework-foundry-hosting/)
+- [`agent-framework-foundry`](https://pypi.org/project/agent-framework-foundry/)
 - [Managed Identities for Azure Resources](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/)
