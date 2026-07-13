@@ -24,11 +24,28 @@ import base64
 import json
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 
 DEFAULT_URL = "http://localhost:8088"
 SAMPLE = Path(__file__).parent / "sample.txt"
+
+FOUNDRY_SCOPE = "https://ai.azure.com/.default"
+
+
+def _needs_auth(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host.endswith(".azure.com") or host.endswith(".azure.net")
+
+
+def _auth_headers(url: str) -> dict[str, str]:
+    if not _needs_auth(url):
+        return {}
+    from azure.identity import DefaultAzureCredential
+    print(f"    (acquiring Entra token for {FOUNDRY_SCOPE})")
+    token = DefaultAzureCredential().get_token(FOUNDRY_SCOPE).token
+    return {"Authorization": f"Bearer {token}"}
 
 
 def build_payload(file_bytes: bytes, filename: str, media_type: str) -> dict:
@@ -74,7 +91,8 @@ def main() -> int:
     print(f"    Content types: {[c['type'] for c in payload['input'][0]['content']]}")
     print()
 
-    with httpx.Client(timeout=120.0) as client:
+    headers = _auth_headers(args.url)
+    with httpx.Client(timeout=120.0, headers=headers) as client:
         r = client.post(endpoint, json=payload)
         r.raise_for_status()
         body = r.json()

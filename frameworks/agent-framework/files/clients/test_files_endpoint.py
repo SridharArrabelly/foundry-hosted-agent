@@ -7,9 +7,13 @@ and a ``/files`` endpoint for stateful file persistence. This client tests
 that upload path as a contrast to Client A (which pushes bytes inline).
 
 Note: the ``/files`` endpoint is provided by the Foundry hosted-agent platform.
-It may not be exposed by the local ``azure-ai-agentserver-agentframework``
-server (which is the /responses server only). If the local run returns 404
-for ``POST /files``, run this against a deployed hosted agent instead.
+The local agent server does NOT expose it - if the local run returns 404, run
+this against a deployed hosted agent using ``--url <deployed>``.
+
+Auth: when ``--url`` points at a Foundry endpoint (``*.services.ai.azure.com``
+or ``*.azure.com``), the client acquires an Entra token via DefaultAzureCredential
+and sends it as ``Authorization: Bearer <token>``. Requires you to be signed in
+via ``az login`` (or any credential DefaultAzureCredential can resolve).
 
 Usage:
     python clients/test_files_endpoint.py                 # local server on :8088
@@ -22,11 +26,36 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 
 DEFAULT_URL = "http://localhost:8088"
 SAMPLE = Path(__file__).parent / "sample.txt"
+
+# Scope for Foundry / Azure AI cognitive endpoints
+FOUNDRY_SCOPE = "https://ai.azure.com/.default"
+
+
+def _needs_auth(url: str) -> bool:
+    host = (urlparse(url).hostname or "").lower()
+    return host.endswith(".azure.com") or host.endswith(".azure.net")
+
+
+def _auth_headers(url: str) -> dict[str, str]:
+    if not _needs_auth(url):
+        return {}
+    try:
+        from azure.identity import DefaultAzureCredential
+    except ImportError:
+        print(
+            "!!! azure-identity not installed. Install it or run against localhost.",
+            file=sys.stderr,
+        )
+        raise
+    print(f"    (acquiring Entra token for {FOUNDRY_SCOPE})")
+    token = DefaultAzureCredential().get_token(FOUNDRY_SCOPE).token
+    return {"Authorization": f"Bearer {token}"}
 
 
 def upload(client: httpx.Client, base_url: str, path: Path, media_type: str) -> str:
@@ -84,8 +113,9 @@ def main() -> int:
     args = parser.parse_args()
 
     path = Path(args.file)
+    headers = _auth_headers(args.url)
 
-    with httpx.Client(timeout=120.0) as client:
+    with httpx.Client(timeout=120.0, headers=headers) as client:
         file_id = upload(client, args.url, path, args.media_type)
         if not file_id:
             print("!!! Upload succeeded but no file id returned - cannot continue.")
